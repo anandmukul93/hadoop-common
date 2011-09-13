@@ -310,5 +310,10 @@ public class WrappedReducer<KEYIN, VALUEIN, KEYOUT, VALUEOUT>
     public String getUser() {
       return reduceContext.getUser();
     }
+
+    @Override
+    public boolean nextKeyIsSame() {
+      return reduceContext.nextKeyIsSame();
+    }
   }
 }

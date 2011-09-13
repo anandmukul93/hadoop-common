@@ -277,14 +277,14 @@ public static final String OUTDIR = "mapreduce.output.fileoutputformat.outputdir
   /**
    * Get the base output name for the output file.
    */
-  protected static String getOutputName(JobContext job) {
+  public static String getOutputName(JobContext job) {
     return job.getConfiguration().get(BASE_OUTPUT_NAME, PART);
   }
 
   /**
    * Set the base output name for output file to be created.
    */
-  protected static void setOutputName(JobContext job, String name) {
+  public static void setOutputName(JobContext job, String name) {
     job.getConfiguration().set(BASE_OUTPUT_NAME, name);
   }
 

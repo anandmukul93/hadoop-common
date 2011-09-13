@@ -359,4 +359,9 @@ public class ReduceContextImpl<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
   Iterable<VALUEIN> getValues() throws IOException, InterruptedException {
     return iterable;
   }
+
+  @Override
+  public boolean nextKeyIsSame() {
+    return nextKeyIsSame;
+  }
 }

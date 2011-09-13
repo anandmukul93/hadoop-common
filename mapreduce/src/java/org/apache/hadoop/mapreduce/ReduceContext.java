@@ -59,4 +59,10 @@ public interface ReduceContext<KEYIN,VALUEIN,KEYOUT,VALUEOUT>
      */
     void resetBackupStore() throws IOException;
   }
+
+  /**
+   * For RAMP
+   * Returns true if nextKeyValue() will give us the same key
+   */
+  public boolean nextKeyIsSame();
 }

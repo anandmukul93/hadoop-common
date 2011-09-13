@@ -297,4 +297,10 @@ class ChainReduceContextImpl<KEYIN, VALUEIN, KEYOUT, VALUEOUT> implements
   public void progress() {
     base.progress();
   }
+
+  @Override
+  public boolean nextKeyIsSame() {
+    // TODO Auto-generated method stub
+    return false;
+  }
 }
