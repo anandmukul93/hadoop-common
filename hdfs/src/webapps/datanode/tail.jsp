@@ -27,9 +27,27 @@
   //for java.io.Serializable
   private static final long serialVersionUID = 1L;
 %>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
 <%JspHelper.createTitle(out, request, request.getParameter("filename")); %>
+<script type="text/javascript" src="/jquery.fancybox-1.3.4/jquery-1.4.3.min.js"></script>
+<script type="text/javascript" src="/jquery.fancybox-1.3.4/fancybox/jquery.fancybox-1.3.4.pack.js"></script>
+<link rel="stylesheet" href="/jquery.fancybox-1.3.4/fancybox/jquery.fancybox-1.3.4.css" type="text/css" media="screen"/>
+<script type="text/javascript">
+jQuery(document).ready(function() {
+$(".prov").fancybox({
+'width'				: '80%',
+'height'			: '80%',
+'autoScale'     	: false,
+'transitionIn'		: 'none',
+'transitionOut'		: 'none',
+'overlayOpacity'	: 0.25,
+'type'				: 'iframe'
+});
+});
+</script>
 </head>
 <body>
 <form action="/tail.jsp" method="GET">

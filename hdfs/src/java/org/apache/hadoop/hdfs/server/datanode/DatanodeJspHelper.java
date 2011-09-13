@@ -34,6 +34,7 @@ import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FsShell;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DFSClient;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
@@ -563,7 +564,19 @@ public class DatanodeJspHelper {
       out.print("<a href=\"" + prevUrl + "\">View Prev chunk</a>&nbsp;&nbsp;");
     }
     out.print("<hr>");
-    out.print("<textarea cols=\"100\" rows=\"25\" wrap=\"virtual\" style=\"width:100%\" READONLY>");
+    out.println("<div style=\"width:100%; height:25em; overflow:auto; border:1px solid grey\"><pre style=\"margin:0\">");
+    if (new Path(filename).getName().startsWith("part-")) {
+      try {
+        JspHelper.streamBlockInAscii(new InetSocketAddress(req.getServerName(),
+            datanodePort), blockId, blockToken, genStamp, blockSize,
+            startOffset, chunkSizeToView, out, conf,
+            datanode.getNameNodeAddr().getHostName(), namenodeInfoPort,
+            URLEncoder.encode(filename, "UTF-8"));
+      } catch (Exception e) {
+        out.print(e);
+      }
+    } else {
+    //out.print("<textarea cols=\"100\" rows=\"25\" wrap=\"virtual\" style=\"width:100%\" READONLY>");
     try {
       JspHelper.streamBlockInAscii(new InetSocketAddress(req.getServerName(),
           datanodePort), blockId, blockToken, genStamp, blockSize,
@@ -571,7 +584,9 @@ public class DatanodeJspHelper {
     } catch (Exception e) {
       out.print(e);
     }
-    out.print("</textarea>");
+    //out.print("</textarea>");
+    }
+    out.print("</pre></div>");
     dfs.close();
   }
 
@@ -650,10 +665,19 @@ public class DatanodeJspHelper {
     final long startOffset = blockSize >= chunkSizeToView ? blockSize
         - chunkSizeToView : 0;
 
-    out.print("<textarea cols=\"100\" rows=\"25\" wrap=\"virtual\" style=\"width:100%\" READONLY>");
+    out.println("<div style=\"width:100%; height:25em; overflow:auto; border:1px solid grey\"><pre style=\"margin:0\">");
+    if (new Path(filename).getName().startsWith("part-")) {
+      JspHelper.streamBlockInAscii(addr, blockId, accessToken, genStamp,
+          blockSize, startOffset, chunkSizeToView, out, conf,
+          datanode.getNameNodeAddr().getHostName(), namenodeInfoPort,
+          URLEncoder.encode(filename, "UTF-8"));
+    } else {
+    //out.print("<textarea cols=\"100\" rows=\"25\" wrap=\"virtual\" style=\"width:100%\" READONLY>");
     JspHelper.streamBlockInAscii(addr, blockId, accessToken, genStamp,
         blockSize, startOffset, chunkSizeToView, out, conf);
-    out.print("</textarea>");
+    //out.print("</textarea>");
+    }
+    out.print("</pre></div>");
     dfs.close();
   }
 }
