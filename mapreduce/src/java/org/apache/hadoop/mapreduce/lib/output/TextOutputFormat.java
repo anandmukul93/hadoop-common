@@ -29,6 +29,7 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.FSDataOutputStream;
 
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.compress.CompressionCodec;
@@ -57,6 +58,7 @@ public class TextOutputFormat<K, V> extends FileOutputFormat<K, V> {
 
     protected DataOutputStream out;
     private final byte[] keyValueSeparator;
+    protected LongWritable position = new LongWritable();
 
     public LineRecordWriter(DataOutputStream out, String keyValueSeparator) {
       this.out = out;
@@ -89,6 +91,12 @@ public class TextOutputFormat<K, V> extends FileOutputFormat<K, V> {
     public synchronized void write(K key, V value)
       throws IOException {
 
+      if (out instanceof FSDataOutputStream) {
+        position.set(((FSDataOutputStream) out).getPos());
+      } else {
+        position.set(out.size());
+      }
+
       boolean nullKey = key == null || key instanceof NullWritable;
       boolean nullValue = value == null || value instanceof NullWritable;
       if (nullKey && nullValue) {
@@ -109,6 +117,11 @@ public class TextOutputFormat<K, V> extends FileOutputFormat<K, V> {
     public synchronized 
     void close(TaskAttemptContext context) throws IOException {
       out.close();
+    }
+
+    @Override
+    public LongWritable getCurrentID() {
+      return position;
     }
   }
 
