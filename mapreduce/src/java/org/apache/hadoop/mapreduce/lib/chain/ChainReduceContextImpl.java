@@ -303,4 +303,10 @@ class ChainReduceContextImpl<KEYIN, VALUEIN, KEYOUT, VALUEOUT> implements
   public Credentials getCredentials() {
     return base.getCredentials();
   }
+
+  @Override
+  public boolean nextKeyIsSame() {
+    // TODO Auto-generated method stub
+    return false;
+  }
 }

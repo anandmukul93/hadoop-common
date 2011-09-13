@@ -316,5 +316,10 @@ public class WrappedReducer<KEYIN, VALUEIN, KEYOUT, VALUEOUT>
     public Credentials getCredentials() {
       return reduceContext.getCredentials();
     }
+
+    @Override
+    public boolean nextKeyIsSame() {
+      return reduceContext.nextKeyIsSame();
+    }
   }
 }
