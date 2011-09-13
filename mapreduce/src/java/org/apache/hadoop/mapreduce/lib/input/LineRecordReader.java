@@ -39,6 +39,7 @@ import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.ramp.file.FilePosition;
 import org.apache.hadoop.util.LineReader;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
@@ -66,6 +67,7 @@ public class LineRecordReader extends RecordReader<LongWritable, Text> {
   private Counter inputByteCounter;
   private CompressionCodec codec;
   private Decompressor decompressor;
+  private FilePosition provenance;
 
   public void initialize(InputSplit genericSplit,
                          TaskAttemptContext context) throws IOException {
@@ -110,6 +112,9 @@ public class LineRecordReader extends RecordReader<LongWritable, Text> {
       start += in.readLine(new Text(), 0, maxBytesToConsume(start));
     }
     this.pos = start;
+
+    provenance = new FilePosition(file,
+        FileInputFormat.getInputPaths(context));
   }
   
   private boolean isCompressedInput() {
@@ -137,6 +142,7 @@ public class LineRecordReader extends RecordReader<LongWritable, Text> {
       key = new LongWritable();
     }
     key.set(pos);
+    provenance.setPosition(pos);
     if (value == null) {
       value = new Text();
     }
@@ -150,7 +156,9 @@ public class LineRecordReader extends RecordReader<LongWritable, Text> {
         break;
       }
       pos += newSize;
-      inputByteCounter.increment(newSize);
+      if (inputByteCounter != null) {
+        inputByteCounter.increment(newSize);
+      }
       if (newSize < maxLineLength) {
         break;
       }
@@ -176,6 +184,11 @@ public class LineRecordReader extends RecordReader<LongWritable, Text> {
   @Override
   public Text getCurrentValue() {
     return value;
+  }
+
+  @Override
+  public FilePosition getCurrentID() {
+    return provenance;
   }
 
   /**
