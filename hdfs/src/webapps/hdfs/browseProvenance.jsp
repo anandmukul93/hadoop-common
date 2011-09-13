@@ -1,7 +1,7 @@
 <%
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file 
+ * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
  * to you under the Apache License, Version 2.0 (the
@@ -19,48 +19,24 @@
 %>
 <%@ page
   contentType="text/html; charset=UTF-8"
-  import="org.apache.hadoop.hdfs.server.common.JspHelper"
-  import="org.apache.hadoop.util.ServletUtil"
   import="org.apache.hadoop.conf.Configuration"
+  import="org.apache.hadoop.hdfs.server.common.JspHelper"
+  import="org.apache.hadoop.hdfs.server.common.RampJspHelper"
+  import="org.apache.hadoop.util.ServletUtil"
 %>
 <%!
   //for java.io.Serializable
   private static final long serialVersionUID = 1L;
 %>
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html>
 <head>
 <%JspHelper.createTitle(out, request, request.getParameter("filename")); %>
-<script type="text/javascript" src="/jquery.fancybox-1.3.4/jquery-1.4.3.min.js"></script>
-<script type="text/javascript" src="/jquery.fancybox-1.3.4/fancybox/jquery.fancybox-1.3.4.pack.js"></script>
-<link rel="stylesheet" href="/jquery.fancybox-1.3.4/fancybox/jquery.fancybox-1.3.4.css" type="text/css" media="screen"/>
-<script type="text/javascript">
-jQuery(document).ready(function() {
-$(".prov").fancybox({
-'width'				: '80%',
-'height'			: '80%',
-'autoScale'     	: false,
-'transitionIn'		: 'none',
-'transitionOut'		: 'none',
-'overlayOpacity'	: 0.25,
-'type'				: 'iframe'
-});
-});
-</script>
 </head>
 <body onload="document.goto.dir.focus()">
-<% 
-  Configuration conf = 
-     (Configuration) application.getAttribute("datanode.conf");
-  DatanodeJspHelper.generateFileChunks(out, request, conf); 
-%>
-<hr>
-<% DatanodeJspHelper.generateFileDetails(out, request, conf); %>
-
-<h2>Local logs</h2>
-<a href="/logs/">Log</a> directory
-
 <%
-out.println(ServletUtil.htmlFooter());
+  Configuration conf = 
+     (Configuration) application.getAttribute("name.conf");
+  RampJspHelper.generateProvenance(out, request, conf);
 %>
+

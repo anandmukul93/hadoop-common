@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Random;
+import java.util.StringTokenizer;
 import java.util.TreeSet;
 
 import javax.servlet.http.HttpServletRequest;
@@ -149,6 +150,63 @@ public class JspHelper {
     blockReader = null;
     s.close();
     out.print(HtmlQuoting.quoteHtmlChars(new String(buf)));
+  }
+
+  public static void streamBlockInAscii(InetSocketAddress addr, long blockId, 
+                                 BlockAccessToken accessToken, long genStamp, 
+                                 long blockSize, 
+                                 long offsetIntoBlock, long chunkSizeToView, 
+                                 JspWriter out,
+                                 Configuration conf,
+                                 String namenodeHost,
+                                 int namenodeInfoPort,
+                                 String encodedFilename)
+    throws IOException {
+    if (chunkSizeToView == 0) return;
+    Socket s = new Socket();
+    s.connect(addr, HdfsConstants.READ_TIMEOUT);
+    s.setSoTimeout(HdfsConstants.READ_TIMEOUT);
+      
+      long amtToRead = Math.min(chunkSizeToView, blockSize - offsetIntoBlock);     
+      
+      // Use the block name for file name. 
+      BlockReader blockReader = 
+        BlockReader.newBlockReader(s, addr.toString() + ":" + blockId,
+                                             blockId, accessToken, genStamp ,offsetIntoBlock, 
+                                             amtToRead, 
+                                             conf.getInt("io.file.buffer.size",
+                                                         4096));
+        
+    byte[] buf = new byte[(int)amtToRead];
+    int readOffset = 0;
+    int retries = 2;
+    while ( amtToRead > 0 ) {
+      int numRead;
+      try {
+        numRead = blockReader.readAll(buf, readOffset, (int)amtToRead);
+      }
+      catch (IOException e) {
+        retries--;
+        if (retries == 0)
+          throw new IOException("Could not read data from datanode");
+        continue;
+      }
+      amtToRead -= numRead;
+      readOffset += numRead;
+    }
+    blockReader = null;
+    s.close();
+
+    StringTokenizer st = new StringTokenizer(new String(buf), "\n", false);
+    while (st.hasMoreTokens()) {
+      String line = st.nextToken();
+      out.print("<a class=prov href=\"http://" + namenodeHost + ":" + namenodeInfoPort
+          + "/browseProvenance.jsp?filename=" + encodedFilename
+          + "&offset=" + offsetIntoBlock + "\">");
+      out.print(HtmlQuoting.quoteHtmlChars(line));
+      out.print("</a>\n");
+      offsetIntoBlock += line.length() + 1;
+    }
   }
 
   public static void addTableHeader(JspWriter out) throws IOException {
