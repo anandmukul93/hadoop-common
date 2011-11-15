@@ -36,6 +36,7 @@ import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.MRJobConfig;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.ramp.Ramp;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
@@ -314,6 +315,10 @@ public class TeraSort extends Configured implements Tool {
     
     job.getConfiguration().setInt("dfs.replication", getOutputReplication(job));
     TeraOutputFormat.setFinalSync(job, true);
+
+    if (job.getConfiguration().getBoolean("terasort.ramp", false)) {
+      Ramp.setProvenanceCapture(job);
+    }
     int ret = job.waitForCompletion(true) ? 0 : 1;
     LOG.info("done");
     return ret;

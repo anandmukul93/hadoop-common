@@ -23,6 +23,7 @@ import java.io.IOException;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapred.InvalidJobConfException;
 import org.apache.hadoop.mapreduce.JobContext;
@@ -56,6 +57,7 @@ public class TeraOutputFormat extends FileOutputFormat<Text,Text> {
   static class TeraRecordWriter extends RecordWriter<Text,Text> {
     private boolean finalSync = false;
     private FSDataOutputStream out;
+    private LongWritable position = new LongWritable();
 
     public TeraRecordWriter(FSDataOutputStream out,
                             JobContext job) {
@@ -65,6 +67,7 @@ public class TeraOutputFormat extends FileOutputFormat<Text,Text> {
 
     public synchronized void write(Text key, 
                                    Text value) throws IOException {
+      position.set(out.getPos());
       out.write(key.getBytes(), 0, key.getLength());
       out.write(value.getBytes(), 0, value.getLength());
     }
@@ -74,6 +77,11 @@ public class TeraOutputFormat extends FileOutputFormat<Text,Text> {
         out.sync();
       }
       out.close();
+    }
+
+    @Override
+    public LongWritable getCurrentID() {
+      return position;
     }
   }
 

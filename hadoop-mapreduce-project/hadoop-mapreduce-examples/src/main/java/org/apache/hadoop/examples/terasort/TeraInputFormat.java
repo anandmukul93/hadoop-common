@@ -37,6 +37,7 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.lib.ramp.file.FilePosition;
 import org.apache.hadoop.mapreduce.task.TaskAttemptContextImpl;
 import org.apache.hadoop.util.IndexedSortable;
 import org.apache.hadoop.util.QuickSort;
@@ -257,6 +258,7 @@ public class TeraInputFormat extends FileInputFormat<Text,Text> {
     private byte[] buffer = new byte[RECORD_LENGTH];
     private Text key;
     private Text value;
+    private FilePosition provenance;
 
     public TeraRecordReader() throws IOException {
     }
@@ -271,6 +273,10 @@ public class TeraInputFormat extends FileInputFormat<Text,Text> {
       offset = (RECORD_LENGTH - (start % RECORD_LENGTH)) % RECORD_LENGTH;
       in.seek(start + offset);
       length = ((FileSplit)split).getLength();
+
+      provenance = new FilePosition(p,
+          FileInputFormat.getInputPaths(context));
+      provenance.setPosition(start + offset - RECORD_LENGTH);
     }
 
     public void close() throws IOException {
@@ -314,7 +320,13 @@ public class TeraInputFormat extends FileInputFormat<Text,Text> {
       key.set(buffer, 0, KEY_LENGTH);
       value.set(buffer, KEY_LENGTH, VALUE_LENGTH);
       offset += RECORD_LENGTH;
+      provenance.setPosition(provenance.getPosition() + RECORD_LENGTH);
       return true;
+    }
+
+    @Override
+    public FilePosition getCurrentID() {
+      return provenance;
     }
   }
 
