@@ -15,133 +15,137 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.mapreduce.lib.chain;
+package org.apache.hadoop.mapreduce.lib.ramp;
 
 import java.io.IOException;
 import java.net.URI;
 
+import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configuration.IntegerRanges;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.RawComparator;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.InputFormat;
+import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobID;
+import org.apache.hadoop.mapreduce.MapContext;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.OutputCommitter;
 import org.apache.hadoop.mapreduce.OutputFormat;
 import org.apache.hadoop.mapreduce.Partitioner;
-import org.apache.hadoop.mapreduce.RecordWriter;
-import org.apache.hadoop.mapreduce.ReduceContext;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskAttemptID;
 import org.apache.hadoop.security.Credentials;
 
 /**
- * A simple wrapper class that delegates most of its functionality to the
- * underlying context, but overrides the methods to do with record writer and
- * configuration
+ * MapContext for the wrapped mapper class.
  */
-class ChainReduceContextImpl<KEYIN, VALUEIN, KEYOUT, VALUEOUT> implements
-    ReduceContext<KEYIN, VALUEIN, KEYOUT, VALUEOUT> {
+@InterfaceAudience.Private
+@InterfaceStability.Unstable
+class RampMapContextImpl<KEYIN, VALUEIN extends Writable,
+    KEYOUT, VALUEOUT extends Writable, PROVENANCE extends Writable>
+    implements MapContext<KEYIN, VALUEIN, KEYOUT, VALUEOUT> {
 
-  private final ReduceContext<KEYIN, VALUEIN, KEYOUT, VALUEOUT> base;
-  private final RecordWriter<KEYOUT, VALUEOUT> rw;
+  private final MapContext<KEYIN, RampPair<VALUEIN, PROVENANCE>,
+      KEYOUT, RampPair<VALUEOUT, PROVENANCE>> baseMapContext;
   private final Configuration conf;
+  private final RampPair<VALUEOUT, PROVENANCE> valueProvenancePair =
+    new RampPair<VALUEOUT, PROVENANCE>();
 
-  public ChainReduceContextImpl(
-      ReduceContext<KEYIN, VALUEIN, KEYOUT, VALUEOUT> base,
-      RecordWriter<KEYOUT, VALUEOUT> output, Configuration conf) {
-    this.base = base;
-    this.rw = output;
+  RampMapContextImpl(
+      MapContext<KEYIN, RampPair<VALUEIN, PROVENANCE>,
+          KEYOUT, RampPair<VALUEOUT, PROVENANCE>> baseMapContext,
+      Configuration conf) {
+    this.baseMapContext = baseMapContext;
     this.conf = conf;
   }
 
   @Override
-  public Iterable<VALUEIN> getValues() throws IOException, InterruptedException {
-    return base.getValues();
-  }
-
-  @Override
-  public boolean nextKey() throws IOException, InterruptedException {
-    return base.nextKey();
-  }
-
-  @Override
-  public Counter getCounter(Enum<?> counterName) {
-    return base.getCounter(counterName);
-  }
-
-  @Override
-  public Counter getCounter(String groupName, String counterName) {
-    return base.getCounter(groupName, counterName);
+  public InputSplit getInputSplit() {
+    return baseMapContext.getInputSplit();
   }
 
   @Override
   public KEYIN getCurrentKey() throws IOException, InterruptedException {
-    return base.getCurrentKey();
+    return baseMapContext.getCurrentKey();
   }
 
   @Override
   public VALUEIN getCurrentValue() throws IOException, InterruptedException {
-    return base.getCurrentValue();
-  }
-
-  @Override
-  public OutputCommitter getOutputCommitter() {
-    return base.getOutputCommitter();
+    return baseMapContext.getCurrentValue().getValue();
   }
 
   @Override
   public boolean nextKeyValue() throws IOException, InterruptedException {
-    return base.nextKeyValue();
+    return baseMapContext.nextKeyValue();
   }
 
   @Override
-  public void write(KEYOUT key, VALUEOUT value) throws IOException,
-      InterruptedException {
-    rw.write(key, value);
+  public Counter getCounter(Enum<?> counterName) {
+    return baseMapContext.getCounter(counterName);
+  }
+
+  @Override
+  public Counter getCounter(String groupName, String counterName) {
+    return baseMapContext.getCounter(groupName, counterName);
+  }
+
+  @Override
+  public OutputCommitter getOutputCommitter() {
+    return baseMapContext.getOutputCommitter();
+  }
+
+  @Override
+  public void write(KEYOUT key, VALUEOUT value)
+      throws IOException, InterruptedException {
+    valueProvenancePair.setValue(value);
+    valueProvenancePair.setProvenance(
+        baseMapContext.getCurrentValue().getProvenance());
+    baseMapContext.write(key, valueProvenancePair);
   }
 
   @Override
   public String getStatus() {
-    return base.getStatus();
+    return baseMapContext.getStatus();
   }
 
   @Override
   public TaskAttemptID getTaskAttemptID() {
-    return base.getTaskAttemptID();
+    return baseMapContext.getTaskAttemptID();
   }
 
   @Override
   public void setStatus(String msg) {
-    base.setStatus(msg);
+    baseMapContext.setStatus(msg);
   }
 
   @Override
   public Path[] getArchiveClassPaths() {
-    return base.getArchiveClassPaths();
+    return baseMapContext.getArchiveClassPaths();
   }
 
   @Override
   public String[] getArchiveTimestamps() {
-    return base.getArchiveTimestamps();
+    return baseMapContext.getArchiveTimestamps();
   }
 
   @Override
   public URI[] getCacheArchives() throws IOException {
-    return base.getCacheArchives();
+    return baseMapContext.getCacheArchives();
   }
 
   @Override
   public URI[] getCacheFiles() throws IOException {
-    return base.getCacheFiles();
+    return baseMapContext.getCacheFiles();
   }
 
   @Override
   public Class<? extends Reducer<?, ?, ?, ?>> getCombinerClass()
       throws ClassNotFoundException {
-    return base.getCombinerClass();
+    return baseMapContext.getCombinerClass();
   }
 
   @Override
@@ -151,172 +155,166 @@ class ChainReduceContextImpl<KEYIN, VALUEIN, KEYOUT, VALUEOUT> implements
 
   @Override
   public Path[] getFileClassPaths() {
-    return base.getFileClassPaths();
+    return baseMapContext.getFileClassPaths();
   }
 
   @Override
   public String[] getFileTimestamps() {
-    return base.getFileTimestamps();
+    return baseMapContext.getFileTimestamps();
   }
 
   @Override
   public RawComparator<?> getGroupingComparator() {
-    return base.getGroupingComparator();
+    return baseMapContext.getGroupingComparator();
   }
 
   @Override
   public Class<? extends InputFormat<?, ?>> getInputFormatClass()
       throws ClassNotFoundException {
-    return base.getInputFormatClass();
+    return baseMapContext.getInputFormatClass();
   }
 
   @Override
   public String getJar() {
-    return base.getJar();
+    return baseMapContext.getJar();
   }
 
   @Override
   public JobID getJobID() {
-    return base.getJobID();
+    return baseMapContext.getJobID();
   }
 
   @Override
   public String getJobName() {
-    return base.getJobName();
+    return baseMapContext.getJobName();
   }
 
   @Override
   public boolean getJobSetupCleanupNeeded() {
-    return base.getJobSetupCleanupNeeded();
+    return baseMapContext.getJobSetupCleanupNeeded();
   }
 
   @Override
   public boolean getTaskCleanupNeeded() {
-    return base.getTaskCleanupNeeded();
+    return baseMapContext.getTaskCleanupNeeded();
   }
 
   @Override
   public Path[] getLocalCacheArchives() throws IOException {
-    return base.getLocalCacheArchives();
+    return baseMapContext.getLocalCacheArchives();
   }
 
   @Override
   public Path[] getLocalCacheFiles() throws IOException {
-    return base.getLocalCacheFiles();
+    return baseMapContext.getLocalCacheFiles();
   }
 
   @Override
   public Class<?> getMapOutputKeyClass() {
-    return base.getMapOutputKeyClass();
+    return baseMapContext.getMapOutputKeyClass();
   }
 
   @Override
   public Class<?> getMapOutputValueClass() {
-    return base.getMapOutputValueClass();
+    return baseMapContext.getMapOutputValueClass();
   }
 
   @Override
   public Class<? extends Mapper<?, ?, ?, ?>> getMapperClass()
       throws ClassNotFoundException {
-    return base.getMapperClass();
+    return baseMapContext.getMapperClass();
   }
 
   @Override
   public int getMaxMapAttempts() {
-    return base.getMaxMapAttempts();
+    return baseMapContext.getMaxMapAttempts();
   }
 
   @Override
   public int getMaxReduceAttempts() {
-    return base.getMaxMapAttempts();
+    return baseMapContext.getMaxReduceAttempts();
   }
 
   @Override
   public int getNumReduceTasks() {
-    return base.getNumReduceTasks();
+    return baseMapContext.getNumReduceTasks();
   }
 
   @Override
   public Class<? extends OutputFormat<?, ?>> getOutputFormatClass()
       throws ClassNotFoundException {
-    return base.getOutputFormatClass();
+    return baseMapContext.getOutputFormatClass();
   }
 
   @Override
   public Class<?> getOutputKeyClass() {
-    return base.getOutputKeyClass();
+    return baseMapContext.getOutputKeyClass();
   }
 
   @Override
   public Class<?> getOutputValueClass() {
-    return base.getOutputValueClass();
+    return baseMapContext.getOutputValueClass();
   }
 
   @Override
   public Class<? extends Partitioner<?, ?>> getPartitionerClass()
       throws ClassNotFoundException {
-    return base.getPartitionerClass();
+    return baseMapContext.getPartitionerClass();
   }
 
   @Override
   public boolean getProfileEnabled() {
-    return base.getProfileEnabled();
+    return baseMapContext.getProfileEnabled();
   }
 
   @Override
   public String getProfileParams() {
-    return base.getProfileParams();
+    return baseMapContext.getProfileParams();
   }
 
   @Override
   public IntegerRanges getProfileTaskRange(boolean isMap) {
-    return base.getProfileTaskRange(isMap);
+    return baseMapContext.getProfileTaskRange(isMap);
   }
 
   @Override
   public Class<? extends Reducer<?, ?, ?, ?>> getReducerClass()
       throws ClassNotFoundException {
-    return base.getReducerClass();
+    return baseMapContext.getReducerClass();
   }
 
   @Override
   public RawComparator<?> getSortComparator() {
-    return base.getSortComparator();
+    return baseMapContext.getSortComparator();
   }
 
   @Override
   public boolean getSymlink() {
-    return base.getSymlink();
+    return baseMapContext.getSymlink();
   }
 
   @Override
   public String getUser() {
-    return base.getUser();
+    return baseMapContext.getUser();
   }
 
   @Override
   public Path getWorkingDirectory() throws IOException {
-    return base.getWorkingDirectory();
+    return baseMapContext.getWorkingDirectory();
   }
 
   @Override
   public void progress() {
-    base.progress();
+    baseMapContext.progress();
   }
 
   @Override
   public Credentials getCredentials() {
-    return base.getCredentials();
-  }
-  
-  @Override
-  public float getProgress() {
-    return base.getProgress();
+    return baseMapContext.getCredentials();
   }
 
   @Override
-  public boolean nextKeyIsSame() {
-    // TODO Auto-generated method stub
-    return false;
+  public float getProgress() {
+    return baseMapContext.getProgress();
   }
 }

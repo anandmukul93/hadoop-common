@@ -23,6 +23,8 @@ import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Writable;
 
 /**
  * <code>RecordWriter</code> writes the output &lt;key, value&gt; pairs 
@@ -54,4 +56,14 @@ public abstract class RecordWriter<K, V> {
    */ 
   public abstract void close(TaskAttemptContext context
                              ) throws IOException, InterruptedException;
+
+  /**
+   * Get the current record ID.
+   * @return the provenance annotation for the key/value pair
+   * @throws IOException
+   * @throws InterruptedException
+   */
+  public Writable getCurrentID() throws IOException, InterruptedException {
+    return NullWritable.get();
+  }
 }

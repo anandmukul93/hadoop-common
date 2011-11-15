@@ -326,5 +326,10 @@ public class WrappedReducer<KEYIN, VALUEIN, KEYOUT, VALUEOUT>
     public float getProgress() {
       return reduceContext.getProgress();
     }
+
+    @Override
+    public boolean nextKeyIsSame() {
+      return reduceContext.nextKeyIsSame();
+    }
   }
 }

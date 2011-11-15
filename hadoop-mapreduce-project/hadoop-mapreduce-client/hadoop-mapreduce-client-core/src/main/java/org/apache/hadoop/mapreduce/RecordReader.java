@@ -23,6 +23,8 @@ import java.io.IOException;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Writable;
 
 /**
  * The record reader breaks the data into key/value pairs for input to the
@@ -84,4 +86,14 @@ public abstract class RecordReader<KEYIN, VALUEIN> implements Closeable {
    * Close the record reader.
    */
   public abstract void close() throws IOException;
+
+  /**
+   * Get the current record ID.
+   * @return the provenance annotation for the current key/value pair
+   * @throws IOException
+   * @throws InterruptedException
+   */
+  public Writable getCurrentID() throws IOException, InterruptedException {
+    return NullWritable.get();
+  }
 }
