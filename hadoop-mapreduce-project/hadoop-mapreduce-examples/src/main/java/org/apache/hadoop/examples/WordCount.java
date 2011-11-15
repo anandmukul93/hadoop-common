@@ -29,6 +29,7 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.ramp.Ramp;
 import org.apache.hadoop.util.GenericOptionsParser;
 
 public class WordCount {
@@ -81,6 +82,10 @@ public class WordCount {
     job.setOutputValueClass(IntWritable.class);
     FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
     FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+
+    if (job.getConfiguration().getBoolean("wordcount.ramp", false)) {
+      Ramp.setProvenanceCapture(job);
+    }
     System.exit(job.waitForCompletion(true) ? 0 : 1);
   }
 }

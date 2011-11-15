@@ -38,6 +38,7 @@ import org.apache.hadoop.io.compress.Decompressor;
 import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.lib.ramp.file.FilePosition;
 import org.apache.hadoop.util.LineReader;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.Log;
@@ -65,6 +66,7 @@ public class LineRecordReader extends RecordReader<LongWritable, Text> {
   private CompressionCodec codec;
   private Decompressor decompressor;
   private byte[] recordDelimiterBytes;
+  private FilePosition provenance;
 
   public LineRecordReader() {
   }
@@ -130,6 +132,9 @@ public class LineRecordReader extends RecordReader<LongWritable, Text> {
       start += in.readLine(new Text(), 0, maxBytesToConsume(start));
     }
     this.pos = start;
+
+    provenance = new FilePosition(file,
+        FileInputFormat.getInputPaths(context));
   }
   
   private boolean isCompressedInput() {
@@ -157,6 +162,7 @@ public class LineRecordReader extends RecordReader<LongWritable, Text> {
       key = new LongWritable();
     }
     key.set(pos);
+    provenance.setPosition(pos);
     if (value == null) {
       value = new Text();
     }
@@ -218,5 +224,10 @@ public class LineRecordReader extends RecordReader<LongWritable, Text> {
         CodecPool.returnDecompressor(decompressor);
       }
     }
+  }
+
+  @Override
+  public FilePosition getCurrentID() {
+    return provenance;
   }
 }
